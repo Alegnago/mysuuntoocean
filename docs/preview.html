@@ -1,0 +1,202 @@
+<title>Suunto Ocean Cassa 3D</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: strumento a due colonne, il viewer domina; dati e confronto col disegno a lato/sotto */
+  :root {
+    --bg: #eef1f3;
+    --panel: #ffffff;
+    --fg: #16202a;
+    --muted: #5d6b78;
+    --line: #d3dae0;
+    --accent: #e0592a;
+    --stage: #dfe5ea;
+    --font-display: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --font-body: "Barlow", system-ui, sans-serif;
+    --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0f1418; --panel: #172027; --fg: #e6ecf0; --muted: #91a0ad;
+      --line: #2a3640; --accent: #ff7a45; --stage: #121a20; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0f1418; --panel: #172027; --fg: #e6ecf0; --muted: #91a0ad;
+    --line: #2a3640; --accent: #ff7a45; --stage: #121a20; color-scheme: dark;
+  }
+  body {
+    background: var(--bg); color: var(--fg); font-family: var(--font-body); font-size: 15px; line-height: 1.5;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    padding-block: 20px 32px;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; display: grid; gap: 20px; }
+  header { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 24px; }
+  h1 { font-family: var(--font-display); font-size: 2rem; letter-spacing: .02em; margin: 0; text-wrap: balance; text-transform: uppercase; }
+  .phase { font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .main { grid-template-columns: minmax(0, 1fr); } }
+  .stage { position: relative; background: var(--stage); border: 1px solid var(--line); border-radius: 6px; overflow: hidden; aspect-ratio: 4 / 3; max-width: 100%; }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; }
+  .hint { position: absolute; left: 12px; bottom: 10px; font-size: .75rem; color: var(--muted); pointer-events: none; }
+  .controls { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; }
+  .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 5px; overflow: hidden; }
+  .seg button { font: 500 .85rem var(--font-body); background: var(--panel); color: var(--fg); border: 0; padding: 7px 12px; cursor: pointer; }
+  .seg button + button { border-left: 1px solid var(--line); }
+  .seg button[aria-pressed="true"] { background: var(--fg); color: var(--panel); }
+  .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  aside { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 14px; }
+  aside h2 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .06em; font-size: 1rem; margin: 0; }
+  dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 6px 12px; }
+  dt { color: var(--muted); font-size: .85rem; }
+  dd { margin: 0; font-family: var(--font-mono); font-variant-numeric: tabular-nums; text-align: right; font-size: .9rem; }
+  .note { font-size: .85rem; color: var(--muted); margin: 0; }
+  .key { display: inline-block; width: 10px; height: 10px; border-radius: 2px; background: var(--accent); margin-right: 6px; vertical-align: -1px; }
+  figure { margin: 0; background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 10px; }
+  figure img { width: 100%; height: auto; background: #fff; border-radius: 3px; }
+  figcaption { font-size: .85rem; color: var(--muted); }
+  @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>Suunto Ocean · cassa</h1>
+    <span class="phase">Fase 1 · profilo + revolve · senza anse e bottoni</span>
+  </header>
+
+  <div class="main">
+    <div style="display:grid; gap:12px; min-width:0">
+      <div class="stage" id="stage">
+        <span class="hint">Trascina per ruotare · rotella o pizzico per lo zoom</span>
+      </div>
+      <div class="controls">
+        <div class="seg" role="group" aria-label="Taglio">
+          <button id="cut-full" aria-pressed="false">Intero</button>
+          <button id="cut-section" aria-pressed="true">Sezione</button>
+        </div>
+        <div class="seg" role="group" aria-label="Vista">
+          <button id="view-iso" aria-pressed="true">3/4</button>
+          <button id="view-side" aria-pressed="false">Laterale</button>
+          <button id="view-top" aria-pressed="false">Dall'alto</button>
+          <button id="view-back" aria-pressed="false">Fondello</button>
+        </div>
+        <div class="seg" role="group" aria-label="Spigoli">
+          <button id="edges" aria-pressed="false">Mostra wireframe</button>
+        </div>
+      </div>
+    </div>
+
+    <aside>
+      <h2>Misure del modello</h2>
+      <dl>
+        <dt>Diametro max</dt><dd id="d-dia">–</dd>
+        <dt>Spessore</dt><dd id="d-h">–</dd>
+        <dt>Faccia superiore piana fino a</dt><dd>Ø 46.60 mm</dd>
+        <dt>Fondo cassa</dt><dd>Ø 42.14 mm</dd>
+        <dt>Pendenza fianco</dt><dd>0.594 (30.7°)</dd>
+        <dt>Scarto dal disegno</dt><dd>max 0.08 mm</dd>
+      </dl>
+      <p class="note"><span class="key"></span>La faccia arancione è la mezza sezione ricalcata sul disegno: è il profilo che viene rivoluzionato di 360°.</p>
+      <p class="note">Spessore misurato sul disegno: 15.32 mm (il dato ufficiale Suunto è 15.1 mm).</p>
+    </aside>
+  </div>
+
+  <figure>
+    <img src="overlay.png" alt="Profilo del modello in verde sovrapposto alla vista laterale del disegno tecnico" width="1180" height="430">
+    <figcaption>Profilo del modello (verde) sopra la vista laterale del disegno tecnico. Il fianco sotto la lunetta continua dritto, dietro le anse, fino alla linea di fondo più bassa.</figcaption>
+  </figure>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.147.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+const DATA = /*PROFILE*/{"profile": [[0.0, 15.3231], [23.3003, 15.3231], [23.3937, 15.2946], [23.4588, 15.2202], [23.5226, 15.1443], [23.5957, 15.0769], [23.6624, 15.0032], [23.7244, 14.9256], [23.7733, 14.8392], [23.8147, 14.7489], [23.8551, 14.6581], [23.8941, 14.5666], [23.9312, 14.4744], [23.9669, 14.3816], [24.0015, 14.2885], [24.0354, 14.195], [24.0686, 14.1014], [24.1015, 14.0076], [24.1343, 13.9137], [24.1669, 13.8199], [24.1996, 13.726], [24.2322, 13.6321], [24.2647, 13.5382], [24.297, 13.4442], [24.3291, 13.3501], [24.3609, 13.2559], [24.3924, 13.1616], [24.4234, 13.0672], [24.454, 12.9727], [24.4841, 12.8779], [24.5137, 12.783], [24.5425, 12.6879], [24.5707, 12.5926], [24.5981, 12.4971], [24.6247, 12.4013], [24.6505, 12.3053], [24.6754, 12.2091], [24.6993, 12.1126], [24.7223, 12.0159], [24.7443, 11.919], [24.7653, 11.8218], [24.7853, 11.7245], [24.8042, 11.6269], [24.822, 11.5291], [24.8388, 11.4311], [24.8544, 11.333], [24.8688, 11.2346], [24.882, 11.1361], [24.894, 11.0375], [24.9047, 10.9386], [24.9141, 10.8397], [24.9222, 10.7406], [24.9289, 10.6415], [24.9342, 10.5422], [24.9381, 10.4429], [24.9405, 10.3435], [24.9414, 10.2442], [24.9408, 10.1448], [24.9386, 10.0454], [24.9348, 9.9461], [24.9293, 9.8468], [24.9221, 9.7477], [24.9133, 9.6487], [24.9028, 9.5499], [24.8905, 9.4512], [24.8764, 9.3529], [24.8605, 9.2547], [24.8426, 9.157], [24.8229, 9.0595], [24.8014, 8.9625], [24.7781, 8.8659], [24.7525, 8.7699], [24.7246, 8.6745], [24.6959, 8.5793], [24.6668, 8.4843], [24.6318, 8.3912], [24.592, 8.3002], [24.5537, 8.2085], [24.5644, 8.1682], [24.5158, 8.0816], [24.4654, 7.9959], [21.0705, 2.282], [12.605, 2.282], [12.6166, 2.0979], [12.6068, 1.9154], [12.4998, 1.7664], [12.3693, 1.6359], [12.2399, 1.5043], [12.1045, 1.3789], [11.9611, 1.2626], [11.8122, 1.1536], [11.658, 1.0522], [11.4989, 0.9587], [11.3354, 0.873], [11.1683, 0.7947], [10.9979, 0.7237], [10.8248, 0.6596], [10.6495, 0.602], [10.4723, 0.5504], [10.2935, 0.5045], [10.1135, 0.4636], [9.9325, 0.4273], [9.7508, 0.3951], [9.5684, 0.3667], [9.3855, 0.3416], [9.2023, 0.3193], [9.0188, 0.2995], [8.835, 0.2822], [8.6511, 0.2671], [8.467, 0.2539], [8.2827, 0.2425], [8.0984, 0.2325], [7.9141, 0.2237], [7.7296, 0.216], [7.5452, 0.2091], [7.3607, 0.2028], [7.1762, 0.1969], [6.9917, 0.1912], [6.8072, 0.1853], [6.6228, 0.1793], [6.4383, 0.1731], [6.2538, 0.1668], [6.0693, 0.1604], [5.8849, 0.1538], [5.7004, 0.1473], [5.5159, 0.1407], [5.3315, 0.1341], [5.147, 0.1276], [4.9626, 0.121], [4.7781, 0.1146], [4.5936, 0.1083], [4.4091, 0.1022], [4.2246, 0.0962], [4.0402, 0.0905], [3.8557, 0.085], [3.6712, 0.0797], [3.4866, 0.0747], [3.3021, 0.0701], [3.1176, 0.0657], [2.933, 0.0619], [2.7485, 0.0587], [2.564, 0.0544], [2.3794, 0.0525], [2.1948, 0.0511], [2.0102, 0.0498], [1.8257, 0.0484], [1.9285, 0.0486], [2.1128, 0.0495], [2.2974, 0.0505], [2.482, 0.0515], [2.6665, 0.0525], [2.8511, 0.0535], [3.0357, 0.0545], [3.2203, 0.0555], [3.0546, 0.0547], [2.8704, 0.0537], [2.685, 0.0527], [2.4997, 0.0517], [2.3128, 0.0506], [2.1338, 0.0497], [1.9475, 0.0487], [1.7545, 0.0476], [1.6788, 0.0], [0.0, 0.0]], "diameter": 49.883, "height": 15.323}/*END*/;
+
+const stage = document.getElementById('stage');
+const css = () => getComputedStyle(document.documentElement);
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(30, 4 / 3, 1, 1000);
+const controls = new THREE.OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0x8899aa, 0.75));
+const key = new THREE.DirectionalLight(0xffffff, 0.9); key.position.set(40, 80, 60); scene.add(key);
+const rim = new THREE.DirectionalLight(0xffffff, 0.35); rim.position.set(-60, -30, -40); scene.add(rim);
+
+// profilo: dal centro del fondello (0,0) lungo il bordo fino al centro del vetro
+let pts = DATA.profile.slice();
+const end = pts.findIndex(([r, z], i) => i > 0 && r === 0 && z === 0);
+if (end > 0) pts = pts.slice(0, end + 1);
+const H = DATA.height;
+const lathePts = pts.slice().reverse().map(([r, z]) => new THREE.Vector2(r, z - H / 2));
+
+const steel = new THREE.MeshStandardMaterial({ color: 0xb9c2c9, metalness: 0.35, roughness: 0.38, side: THREE.DoubleSide });
+const capMat = new THREE.MeshStandardMaterial({ color: 0xe0592a, metalness: 0, roughness: 0.7, side: THREE.DoubleSide });
+const group = new THREE.Group(); scene.add(group);
+
+const shape = new THREE.Shape(pts.map(([r, z]) => new THREE.Vector2(r, z - H / 2)));
+const capGeo = new THREE.ShapeGeometry(shape);
+capGeo.rotateY(-Math.PI / 2);   // (r, z) -> piano del profilo a phi = 0
+
+let wire = false;
+function build(section) {
+  group.clear();
+  const phi = section ? Math.PI * 1.5 : Math.PI * 2;
+  const start = section ? Math.PI / 2 : 0;   // toglie il quarto tra phi = 0 e 90°, rivolto verso la vista 3/4
+  const body = new THREE.Mesh(new THREE.LatheGeometry(lathePts, 256, start, phi), steel);
+  group.add(body);
+  if (section) {
+    const a = new THREE.Mesh(capGeo, capMat); a.rotation.y = start; group.add(a);
+    const b = new THREE.Mesh(capGeo, capMat); b.rotation.y = start + phi; group.add(b);
+  }
+  steel.wireframe = wire;
+}
+
+const views = {
+  iso:  [52, 40, 64],
+  side: [0, 0, 100],
+  top:  [0, 100, 0.01],
+  back: [45, -60, 52],
+};
+function setView(name) {
+  camera.position.set(...views[name]);
+  controls.target.set(0, 0, 0);
+  controls.update();
+  for (const k in views) document.getElementById('view-' + k).setAttribute('aria-pressed', String(k === name));
+}
+
+function setCut(section) {
+  build(section);
+  document.getElementById('cut-full').setAttribute('aria-pressed', String(!section));
+  document.getElementById('cut-section').setAttribute('aria-pressed', String(section));
+}
+
+document.getElementById('cut-full').onclick = () => setCut(false);
+document.getElementById('cut-section').onclick = () => setCut(true);
+for (const k in views) document.getElementById('view-' + k).onclick = () => setView(k);
+document.getElementById('edges').onclick = (e) => {
+  wire = !wire; steel.wireframe = wire;
+  e.currentTarget.setAttribute('aria-pressed', String(wire));
+};
+
+document.getElementById('d-dia').textContent = 'Ø ' + DATA.diameter.toFixed(2) + ' mm';
+document.getElementById('d-h').textContent = DATA.height.toFixed(2) + ' mm';
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+
+setCut(true);
+setView('iso');
+resize();
+(function loop() { controls.update(); renderer.render(scene, camera); requestAnimationFrame(loop); })();
+</script>
