@@ -51,6 +51,9 @@
   .seg button + button { border-left: 1px solid var(--line); }
   .seg button[aria-pressed="true"] { background: var(--fg); color: var(--panel); }
   .seg button:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+  .opacity { display: inline-flex; align-items: center; gap: 8px; font-size: .85rem; color: var(--muted); }
+  .opacity input { width: 140px; accent-color: var(--ref); }
+  .opacity output { font-family: var(--font-mono); font-variant-numeric: tabular-nums; color: var(--fg); min-width: 4ch; text-align: right; }
   aside { background: var(--panel); border: 1px solid var(--line); border-radius: 6px; padding: 16px; display: grid; gap: 14px; }
   aside h2 { font-family: var(--font-display); text-transform: uppercase; letter-spacing: .06em; font-size: 1rem; margin: 0; }
   dl { margin: 0; display: grid; grid-template-columns: auto auto; gap: 6px 12px; }
@@ -99,6 +102,10 @@
           <button id="dims" aria-pressed="true">Quote</button>
           <button id="edges" aria-pressed="false">Wireframe</button>
         </div>
+        <label class="opacity" for="ref-opacity">Opacità disegno
+          <input type="range" id="ref-opacity" min="0" max="100" step="1" value="100">
+          <output id="ref-opacity-value" for="ref-opacity">100%</output>
+        </label>
       </div>
     </div>
 
@@ -315,6 +322,15 @@ toggle('layer-platform', platformMesh);
 toggle('layer-buttons', buttonsMesh);
 toggle('ref-side', refSide);
 toggle('ref-top', refTop);
+const opacityInput = document.getElementById('ref-opacity');
+const opacityValue = document.getElementById('ref-opacity-value');
+function setRefOpacity() {
+  const v = Number(opacityInput.value);
+  for (const m of refMats) m.opacity = v / 100;
+  opacityValue.textContent = v + '%';
+}
+opacityInput.addEventListener('input', setRefOpacity);
+setRefOpacity();
 // le quote stanno nel piano della vista laterale: si nascondono quando lo si guarda di taglio
 let dimsOn = true;
 const dimsBtn = document.getElementById('dims');
