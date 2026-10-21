@@ -91,9 +91,9 @@ def two_lines(ink, x, lo=460, hi=478):
     return centroid(c, max(p0 - 3, 0), split) + lo, centroid(c, split, min(p1 + 3, len(c) - 1)) + lo
 
 
-def smooth(points, sigma_px=0.25, n=40):
+def smooth(points, sigma_px=0.25, n=40, w=None):
     pts = np.asarray(points, dtype=float)
-    tck, _ = splprep(pts.T, s=len(pts) * sigma_px**2)
+    tck, _ = splprep(pts.T, w=w, s=len(pts) * sigma_px**2)
     return np.array(splev(np.linspace(0, 1, n), tck)).T
 
 
@@ -136,6 +136,11 @@ def trace(path=DRAWING):
     for r in range(DOME_MAX_R_COLS, SENSOR_R_PX, -1):
         ys = [lower_edge(ink, int(round(cx + sgn * r)), 470, 510) for sgn in (-1, 1)]
         dome.append((float(r), np.mean(ys) - STROKE_HALF))
+    # il fondello esce dalla linea di fondo: punto d'attacco estrapolato (parabola
+    # x(y) sulle prime righe) e tenuto fermo nello smoothing con peso alto
+    rows = np.array(dome[:6])
+    anchor = (float(np.polyval(np.polyfit(rows[:, 1], rows[:, 0], 2), line_b)), float(line_b))
+    dome.insert(0, anchor)
     sensor_y = np.mean([lower_edge(ink, int(round(cx + d)), 470, 510) for d in range(-15, 16)]) - STROKE_HALF
 
     y0 = sensor_y                                          # z = 0
@@ -144,7 +149,7 @@ def trace(path=DRAWING):
         return [round(float(r) / s, 4), round(float(y0 - y) / s, 4)]
 
     upper_s = smooth(upper)
-    dome_s = smooth(dome)
+    dome_s = smooth(dome, w=[20.0] + [1.0] * (len(dome) - 1))
     r_end, y_end = upper_s[-1]
 
     def flank_r(y):
@@ -153,6 +158,8 @@ def trace(path=DRAWING):
     data = {
         "source": str(Path(path).name),
         "px_per_mm": s,
+        "top_px": y_top,
+        "zero_px": y0,
         "axis_px": cx,
         "height_mm": (y0 - y_top) / s,
         "top_z": (y0 - y_top) / s,

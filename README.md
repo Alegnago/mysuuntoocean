@@ -16,7 +16,7 @@ precisione sub-pixel (scala dalla quota Ø 49,9 mm = 624,2 px).
 - Le linee orizzontali che attraversano tutta la vista (lunetta/cassa, attacco anse,
   linea di fondo più alta) sono giunzioni tra pezzi e non cambiano il profilo.
 
-Scarto tra il modello e il disegno: medio 0,25 px, massimo 1 px (0,08 mm).
+Scarto tra il modello e il disegno: medio 0,24 px, massimo 0,79 px (0,063 mm).
 Spessore risultante dal disegno: 15,32 mm (il dato ufficiale è 15,1 mm).
 
 ![overlay](docs/overlay.png)
@@ -31,5 +31,5 @@ pip install -r requirements.txt
 python tools/trace_profile.py      # disegno -> data/profile_mm.json
 python watch_body.py               # -> export/suunto_ocean_body.step + .stl
 python tools/overlay.py            # controllo: docs/overlay.png, docs/overlay_zoom.png + scarto
-python tools/export_preview.py     # aggiorna l'anteprima web docs/preview.html
+python tools/export_preview.py     # anteprima web: docs/preview.html + piani di riferimento docs/ref_*.png
 ```

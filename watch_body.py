@@ -16,6 +16,7 @@ Uso:  python watch_body.py   ->  export/suunto_ocean_body.step / .stl
 """
 
 import json
+import math
 from pathlib import Path
 
 import cadquery as cq
@@ -24,8 +25,13 @@ ROOT = Path(__file__).parent
 PROFILE = json.loads((ROOT / "data" / "profile_mm.json").read_text())
 
 
+def _unit(v):
+    n = math.hypot(*v)
+    return (v[0] / n, v[1] / n)
+
+
 def _direction(a, b):
-    return (b[0] - a[0], b[1] - a[1])
+    return _unit((b[0] - a[0], b[1] - a[1]))
 
 
 def half_profile() -> cq.Workplane:
@@ -46,13 +52,14 @@ def half_profile() -> cq.Workplane:
         .lineTo(*upper[0])
         # raccordo + fianco lunetta + fianco cassa (ricalcati); in fondo è
         # tangente al fianco rettilineo
-        .spline(upper[1:], tangents=[(1, 0), (-k, -1)], includeCurrent=True)
+        .spline(upper[1:], tangents=[(1, 0), _unit((-k, -1))], includeCurrent=True, scale=False)
         # fianco rettilineo fino al fondo cassa
         .lineTo(*flank_bottom)
-        # fondo cassa piano fino all'attacco del fondello
+        # fondo cassa piano fino all'attacco del fondello (dome[0] è sulla linea di fondo)
         .lineTo(dome[0][0], z_case)
-        # fondello: parte in verticale dal fondo cassa e si appiattisce verso il centro
-        .spline(dome, tangents=[(0, -1), _direction(dome[-2], dome[-1])], includeCurrent=True)
+        # fondello: scende quasi in verticale e si appiattisce verso il centro
+        .spline(dome[1:], tangents=[_direction(dome[0], dome[1]), _direction(dome[-2], dome[-1])],
+                includeCurrent=True, scale=False)
         # gradino del sensore
         .lineTo(p["sensor_r"], 0)
         .lineTo(0, 0)
