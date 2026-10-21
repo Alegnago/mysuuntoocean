@@ -47,8 +47,10 @@ ricavati da `tools/trace_buttons.py` (`data/buttons_mm.json`):
 `watch_lugs.py` (layer separato, `export/suunto_ocean_lugs.*`), forme da
 `tools/trace_lugs.py` (`data/lugs_mm.json`). Ogni ansa è l'intersezione tra la forma in
 pianta (estrusa in verticale) e la sagoma della vista frontale (estrusa in profondità):
-sezione circa rettangolare che si stringe verso l'esterno, con la gamba che scende
-piegandosi verso fuori fino al livello del fondello. Si ricalca un'ansa, le altre tre
+sezione circa rettangolare che si stringe verso l'esterno. In vista frontale la gamba è
+una barra dritta tra il bordo interno e il bordo esterno del disegno (rette ricalcate),
+che parte dalla giunzione con la lunetta (z 11.53) e scende verso l'esterno fino al piede,
+al livello del fondello; sotto la gamba l'ansa scende fino alla linea di fondo. Si ricalca un'ansa, le altre tre
 sono speculari. Verso la cassa i due lati dritti proseguono finché la sagoma frontale li
 taglia, così la faccia verso il cinturino resta piana. Spazio tra le anse: ~22 mm.
 
