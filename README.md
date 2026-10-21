@@ -22,7 +22,22 @@ Spessore risultante dal disegno: 15,32 mm (il dato ufficiale è 15,1 mm).
 ![overlay](docs/overlay.png)
 ![overlay zoom](docs/overlay_zoom.png)
 
-Anse e bottoni non ci sono ancora.
+## Fase 2: piattaforma dei tasti + tasti
+
+Il corpo della fase 1 non cambia. `watch_buttons.py` aggiunge due layer separati,
+ricavati da `tools/trace_buttons.py` (`data/buttons_mm.json`):
+
+- **Piattaforma** (`export/suunto_ocean_platform.*`): anello rivoluzionato con le quote
+  della vista frontale (fondo z 5.84, faccia superiore z 10.96, 0.57 mm sotto la giunzione
+  con la lunetta) intersecato con i due lobi ricalcati in pianta.
+- **Tasti** (`export/suunto_ocean_buttons.*`): ogni tasto è l'intersezione tra la forma in
+  pianta (estrusa in verticale) e la sagoma della vista frontale (estrusa in profondità),
+  quindi entrambe le viste coincidono con il disegno. Le dentellature sono le tacche
+  del contorno in pianta. In pianta la parte interna dei tasti laterali è coperta dalla
+  piattaforma e dal bordo della cassa: lì l'estensione la decide la vista frontale.
+- `export/suunto_ocean_case.*` = corpo + piattaforma in un solido unico.
+
+Le anse non ci sono ancora.
 
 ## Uso
 
@@ -30,6 +45,8 @@ Anse e bottoni non ci sono ancora.
 pip install -r requirements.txt
 python tools/trace_profile.py      # disegno -> data/profile_mm.json
 python watch_body.py               # -> export/suunto_ocean_body.step + .stl
+python tools/trace_buttons.py      # disegno -> data/buttons_mm.json
+python watch_buttons.py            # -> export/suunto_ocean_{platform,buttons,case}.step + .stl
 python tools/overlay.py            # controllo: docs/overlay.png, docs/overlay_zoom.png + scarto
 python tools/export_preview.py     # anteprima web: docs/preview.html + piani di riferimento docs/ref_*.png
 ```

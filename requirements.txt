@@ -1,4 +1,5 @@
 cadquery>=2.4
+contourpy
 matplotlib
 pillow
 numpy

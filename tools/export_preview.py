@@ -120,6 +120,19 @@ def dimensions(pts):
     ]
 
 
+def mesh(part, tol=0.01):
+    """Triangoli del pezzo, già nel sistema del visualizzatore: (X, Z - H/2, -Y)."""
+    verts, tris = part.val().tessellate(tol, 0.15)
+    h = P["top_z"] / 2
+    v = [c for p in verts for c in (round(p.x, 3), round(p.z - h, 3), round(-p.y, 3))]
+    return {"v": v, "i": [i for t in tris for i in t]}
+
+
+def layers():
+    import watch_buttons
+    return {"platform": mesh(watch_buttons.platform()), "buttons": mesh(watch_buttons.buttons())}
+
+
 def stats():
     import overlay
     edges = overlay.profile_edges()
@@ -145,6 +158,7 @@ if __name__ == "__main__":
         "refs": references(),
         "dims": dimensions(pts),
         "stats": stats(),
+        "layers": layers(),
     }
     html = PAGE.read_text()
     html = re.sub(r"/\*PROFILE\*/.*?/\*END\*/", lambda _: "/*PROFILE*/" + json.dumps(data) + "/*END*/", html, flags=re.S)
