@@ -134,8 +134,10 @@ def layers():
     # nell'anteprima solo la parte visibile (fuori dal corpo): le facce interne
     # nascoste lasciano trapelare pixel nel rendering
     body = wb.build_body()
+    import watch_lugs
     return {"platform": mesh(watch_buttons.platform().cut(body)),
-            "buttons": mesh(watch_buttons.buttons().cut(body))}
+            "buttons": mesh(watch_buttons.buttons().cut(body)),
+            "lugs": mesh(watch_lugs.lugs().cut(body))}
 
 
 def stats():

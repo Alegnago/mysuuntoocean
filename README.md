@@ -42,7 +42,18 @@ ricavati da `tools/trace_buttons.py` (`data/buttons_mm.json`):
   piattaforma e dal bordo della cassa: lì l'estensione la decide la vista frontale.
 - `export/suunto_ocean_case.*` = corpo + piattaforma in un solido unico.
 
-Le anse non ci sono ancora.
+## Fase 3: anse
+
+`watch_lugs.py` (layer separato, `export/suunto_ocean_lugs.*`), forme da
+`tools/trace_lugs.py` (`data/lugs_mm.json`). Ogni ansa è l'intersezione tra la forma in
+pianta (estrusa in verticale) e la sagoma della vista frontale (estrusa in profondità):
+sezione circa rettangolare che si stringe verso l'esterno, con la gamba che scende
+piegandosi verso fuori fino al livello del fondello. Si ricalca un'ansa, le altre tre
+sono speculari. Verso la cassa i due lati dritti proseguono finché la sagoma frontale li
+taglia, così la faccia verso il cinturino resta piana. Spazio tra le anse: ~22 mm.
+
+Orientamento: le anse stanno a destra e a sinistra nella pianta del disegno, quindi il
+lato dei tasti (in basso nella pianta, -Y) è il lato **ore 3** dell'orologio.
 
 ## Uso
 
@@ -52,6 +63,8 @@ python tools/trace_profile.py      # disegno -> data/profile_mm.json
 python watch_body.py               # -> export/suunto_ocean_body.step + .stl
 python tools/trace_buttons.py      # disegno -> data/buttons_mm.json
 python watch_buttons.py            # -> export/suunto_ocean_{platform,buttons,case}.step + .stl
+python tools/trace_lugs.py         # disegno -> data/lugs_mm.json
+python watch_lugs.py               # -> export/suunto_ocean_lugs.step + .stl
 python tools/overlay.py            # controllo: docs/overlay.png, docs/overlay_zoom.png + scarto
 python tools/export_preview.py     # anteprima web: docs/preview.html + piani di riferimento docs/ref_*.png
 ```
