@@ -29,7 +29,9 @@ ricavati da `tools/trace_buttons.py` (`data/buttons_mm.json`):
 
 - **Piattaforma** (`export/suunto_ocean_platform.*`): anello rivoluzionato con le quote
   della vista frontale (fondo z 5.84, faccia superiore z 10.96, 0.57 mm sotto la giunzione
-  con la lunetta) intersecato con i due lobi ricalcati in pianta.
+  con la lunetta) intersecato con i due lobi in pianta. Il bordo del lobo verso il tasto
+  è ricalcato dal disegno; alle due estremità prosegue con un raccordo che entra tangente
+  nel cerchio della cassa (a -15.5° e -46° dalle ore 6, `BLEND_END_DEG`).
 - **Tasti** (`export/suunto_ocean_buttons.*`): ogni tasto è l'intersezione tra la forma in
   pianta (estrusa in verticale) e la sagoma della vista frontale (estrusa in profondità),
   quindi entrambe le viste coincidono con il disegno. Le dentellature sono le tacche
