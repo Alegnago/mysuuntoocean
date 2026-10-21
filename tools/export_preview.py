@@ -46,7 +46,8 @@ def sampled_profile():
         e = next(e for e in edges if current in (key(e.startPoint()), key(e.endPoint())))
         edges.remove(e)
         forward = key(e.startPoint()) == current
-        n = 2 if e.geomType() == "LINE" else 80
+        # tratti rettilinei suddivisi ogni ~1 mm: triangoli lunghi e sottili lasciano fessure nel rendering
+        n = max(2, int(e.Length()) + 2) if e.geomType() == "LINE" else 80
         for i in range(n):
             t = i / (n - 1)
             p = e.positionAt(t if forward else 1 - t)
@@ -130,7 +131,11 @@ def mesh(part, tol=0.01):
 
 def layers():
     import watch_buttons
-    return {"platform": mesh(watch_buttons.platform()), "buttons": mesh(watch_buttons.buttons())}
+    # nell'anteprima solo la parte visibile (fuori dal corpo): le facce interne
+    # nascoste lasciano trapelare pixel nel rendering
+    body = wb.build_body()
+    return {"platform": mesh(watch_buttons.platform().cut(body)),
+            "buttons": mesh(watch_buttons.buttons().cut(body))}
 
 
 def stats():

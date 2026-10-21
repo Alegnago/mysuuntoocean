@@ -26,8 +26,9 @@ import watch_body
 ROOT = Path(__file__).parent
 DATA = json.loads((ROOT / "data" / "buttons_mm.json").read_text())
 
-RING_R_IN = 22.0        # l'anello parte dentro il corpo (a z >= 5.84 il corpo ha r >= 23.2)
-RING_R_OUT = 29.0       # oltre il lobo: il contorno esterno lo dà la pianta
+RING_R_IN = 22.0        # le sezioni della piattaforma partono dentro il corpo
+SEAM_ROW_PX = 355.98    # riga della giunzione lunetta/cassa nella vista frontale del disegno
+RING_R_OUT = 29.0       # limite esterno della zona utile dei tasti
 SEAT_R = 23.0           # il tasto centrale entra nella cassa fino a questo raggio
 INNER_EDGE_R = 25.3     # punti della pianta sotto questo raggio stanno sul cerchio della cassa
 SIDE_SEAT_R = 24.0      # il tasto laterale prosegue, nascosto, fino a questo raggio
@@ -131,16 +132,107 @@ def _front_prism(pts, y0, y1):
     return cq.Workplane("XZ").workplane(offset=-y1).polyline(pts).close().extrude(y1 - y0)
 
 
+# --- piattaforma: loft di sezioni radiali ----------------------------------------
+# Profilo della sezione (vista dal lato, foto del lato ore 3 + vista frontale del disegno):
+# dalla giunzione con la lunetta la superficie prosegue l'inclinazione della lunetta e
+# si apre fino a una spalla, scende in verticale al raggio del contorno in pianta, e
+# sotto rientra inclinata fino al fianco del corpo.
+SHOULDER_DROP = 0.57        # spalla sotto la giunzione (linea a lente della vista frontale)
+SHOULDER_RAMP = 0.6         # mm di sporgenza oltre la cassa per avere la spalla piena
+BAND_BOTTOM_Z = 5.35        # bordo inferiore della fascia sotto il tasto centrale (linea y≈433)
+FLANK_MEET_Z = 4.57         # dove la superficie inferiore incontra il fianco (linea y≈443)
+FADE_DEG = 6.0              # gradi verso le anse in cui la fascia si riassorbe nel corpo
+SECTION_STEP_DEG = 1.5
+# le superfici del loft non devono essere tangenti a quelle del corpo (le booleane di OCC
+# falliscono): dove la piattaforma sparisce, la sezione rientra un poco nel corpo
+END_INSET = 0.5             # mm di rientro delle sezioni alle estremità (fade = 0)
+SEAM_INSET = 0.3            # la spalla parte da dentro la lunetta, sulla giunzione
+BAND_INSET = 0.05           # la fascia centrale sta appena dentro il cerchio della cassa
+
+
+def _body_r():
+    """Raggio del corpo in funzione di z (silhouette esterna del revolve)."""
+    import numpy as np
+    pts = []
+    for e in watch_body.half_profile().wire().val().Edges():
+        for i in range(201):
+            v = e.positionAt(i / 200)
+            if v.x > 20:
+                pts.append((v.z, v.x))
+    pts.sort()
+    zs = np.array([p[0] for p in pts]); rs = np.array([p[1] for p in pts])
+    # per ogni z il raggio massimo (silhouette)
+    import collections
+    best = collections.OrderedDict()
+    for z, r in zip(zs.round(3), rs):
+        best[z] = max(best.get(z, 0), r)
+    zz = np.array(list(best.keys())); rr = np.array(list(best.values()))
+    return lambda z: float(np.interp(z, zz, rr))
+
+
+def _ray_radius(poly, theta_deg):
+    """Raggio massimo a cui il raggio uscente all'angolo theta incontra il poligono."""
+    a = math.radians(theta_deg)
+    d = (math.sin(a), -math.cos(a))
+    best = None
+    for (ax, ay), (bx, by) in zip(poly, poly[1:] + poly[:1]):
+        ex, ey = bx - ax, by - ay
+        den = d[0] * ey - d[1] * ex
+        if abs(den) < 1e-12:
+            continue
+        t = (ax * ey - ay * ex) / den          # distanza lungo il raggio
+        u = (ax * d[1] - ay * d[0]) / den      # posizione sul lato
+        if t > 0 and 0 <= u <= 1:
+            best = t if best is None else max(best, t)
+    return best
+
+
+def _smooth(x):
+    x = max(0.0, min(1.0, x))
+    return x * x * (3 - 2 * x)
+
+
+def _section(theta, R, fade, body_r, seam, lobe_bottom):
+    """Sezione chiusa (punti 3D) nel semipiano all'angolo theta."""
+    w = _smooth((R - CASE_R) / SHOULDER_RAMP)          # 0 = a filo cassa, 1 = lobo pieno
+    inset = (1 - fade) * END_INSET
+    R = max(R, CASE_R) - BAND_INSET * (1 - w) - inset
+    z_sh = seam - SHOULDER_DROP * w
+    z_bulge = 10.24                                     # quota del raggio massimo del corpo
+    z_bo = BAND_BOTTOM_Z + (lobe_bottom - BAND_BOTTOM_Z) * w
+    z_bo = z_bulge + (z_bo - z_bulge) * fade
+    z_f = z_bulge + (FLANK_MEET_Z - z_bulge) * fade
+    r_f = min(body_r(z_f) - inset, R - 0.05)
+    r_a = body_r(seam) - SEAM_INSET - inset
+    r_in = RING_R_IN
+    # spalla: Bézier quadratica dalla giunzione (appena dentro la lunetta) alla spalla
+    # (il punto di controllo non supera la parete, altrimenti la sezione si ripiega)
+    c = (min(body_r(seam) + 0.2, r_a + 0.6 * (R - r_a)), z_sh)
+    rz = [(r_in, seam), (r_a, seam)]
+    for u in (0.25, 0.5, 0.75):
+        rz.append(((1 - u) ** 2 * r_a + 2 * u * (1 - u) * c[0] + u * u * R,
+                   (1 - u) ** 2 * seam + 2 * u * (1 - u) * c[1] + u * u * z_sh))
+    rz += [(R, z_sh), (R, z_bo), (r_f, z_f), (r_in, z_f)]
+    a = math.radians(theta)
+    return [cq.Vector(r * math.sin(a), -r * math.cos(a), z) for r, z in rz]
+
+
 def platform() -> cq.Workplane:
-    z0, z1 = DATA["platform_bottom_z"], DATA["platform_top_z"]
-    ring = (
-        cq.Workplane("XZ")
-        .moveTo(RING_R_IN, z0).lineTo(RING_R_OUT, z0).lineTo(RING_R_OUT, z1).lineTo(RING_R_IN, z1).close()
-        .revolve(360, (0, 0, 0), (0, 1, 0))
-    )
+    body_r = _body_r()
+    seam = (watch_body.PROFILE["zero_px"] - SEAM_ROW_PX) / watch_body.PROFILE["px_per_mm"]
+    lobe_bottom = DATA["platform_bottom_z"]
     left = platform_outline()
-    lobes = _plan_prism(left, z0 - 1, z1 + 1).union(_plan_prism(_mirror(left), z0 - 1, z1 + 1))
-    return ring.intersect(lobes)
+    near, far = BLEND_END_DEG
+    span = abs(far)
+    n = int(round(2 * span / SECTION_STEP_DEG))
+    wires = []
+    for i in range(n + 1):
+        th = -span + i * 2 * span / n
+        R = CASE_R if abs(th) <= abs(near) else (_ray_radius(left, -abs(th)) or CASE_R)
+        fade = _smooth((span - abs(th)) / FADE_DEG)
+        pts = _section(th, R, fade, body_r, seam, lobe_bottom)
+        wires.append(cq.Wire.makePolygon(pts, close=True))
+    return cq.Workplane("XY").add(cq.Solid.makeLoft(wires, ruled=False))
 
 
 def _button(plan, front_pts):

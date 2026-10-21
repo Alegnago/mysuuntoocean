@@ -27,11 +27,14 @@ Spessore risultante dal disegno: 15,32 mm (il dato ufficiale è 15,1 mm).
 Il corpo della fase 1 non cambia. `watch_buttons.py` aggiunge due layer separati,
 ricavati da `tools/trace_buttons.py` (`data/buttons_mm.json`):
 
-- **Piattaforma** (`export/suunto_ocean_platform.*`): anello rivoluzionato con le quote
-  della vista frontale (fondo z 5.84, faccia superiore z 10.96, 0.57 mm sotto la giunzione
-  con la lunetta) intersecato con i due lobi in pianta. Il bordo del lobo verso il tasto
-  è ricalcato dal disegno; alle due estremità prosegue con un raccordo che entra tangente
-  nel cerchio della cassa (a -15.5° e -46° dalle ore 6, `BLEND_END_DEG`).
+- **Piattaforma** (`export/suunto_ocean_platform.*`): loft di sezioni radiali da -46° a
+  +46° (passo 1.5°). Ogni sezione, vista di lato: dalla giunzione con la lunetta la
+  superficie si apre fino a una spalla (z 10.96, la linea "a lente" della vista frontale),
+  scende in verticale al raggio del contorno in pianta, e sotto rientra inclinata fino al
+  fianco del corpo (bordo esterno z 5.84 sui lobi, 5.35 sotto il tasto centrale; incontro
+  col fianco a z 4.57: le linee y≈427/433/443 della vista frontale). Il contorno in pianta
+  è il bordo in comune con il tasto, ricalcato, che alle estremità entra tangente nel
+  cerchio della cassa (`BLEND_END_DEG`); verso le anse la fascia si riassorbe nel corpo.
 - **Tasti** (`export/suunto_ocean_buttons.*`): ogni tasto è l'intersezione tra la forma in
   pianta (estrusa in verticale) e la sagoma della vista frontale (estrusa in profondità),
   quindi entrambe le viste coincidono con il disegno. Le dentellature sono le tacche
